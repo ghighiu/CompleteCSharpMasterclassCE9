@@ -1,162 +1,249 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.Text;
 
 namespace CompleteCSharpMasterclassCE9
 {
     internal class Program
     {
+        public static readonly int SymbolXcode = 1;
+        public static readonly int SymbolOcode = 2;
+        public static readonly int FieldStartingNumber = 1;
+        public static readonly int FieldNumbersInARowMin = 3;
+        public static readonly int FieldNumbersInARowMax = 12;
+        public static int FieldNumbersInARow = 3;
+        public static int FieldEndingNumber = 9;
+        public static int GamesPlayed = 0;
+        public static int CurrentPlayer = 1;
+        public static int CurrentTurnNumber = 0;
+        public static bool IsWinner;
+        public static bool Continue;
+
         static void Main(string[] args)
         {
-            int gamesPlayed = 1;
-            bool continuePlaying = false;
 
-            var player1 = new Player();
-            player1.ChoseSymbol();
-            var player2 = new Player();
+            InsertNameHeader();
 
-            if (player1.Symbol == 'X') player2.Symbol = 'O';
-            else player2.Symbol = 'X';
+            //Choose the field size
+            string message = $"Choose a size for the game field ({FieldNumbersInARowMin} - {FieldNumbersInARowMax}):";
+            InputNumberRange(message, FieldNumbersInARowMin, FieldNumbersInARowMax, out int fieldNumber);
+            FieldNumbersInARow = fieldNumber;
+            FieldEndingNumber = (int)(fieldNumber * fieldNumber);
 
-            do
+            InsertNameHeader();
+
+            // Player 1 instantiate
+            var player1 = new Player(CurrentPlayer);
+            player1.ChooseSymbol();
+            CurrentPlayer++;
+
+            //Player 2 instantiate
+            var player2 = new Player(CurrentPlayer);
+            if (player1.Symbol == SymbolXcode) player2.Symbol = SymbolOcode;
+            else player2.Symbol = SymbolXcode;
+            CurrentPlayer--;
+
+            while (true)
             {
-                var field = new Field();
-                const byte totalInputs = 9;
-                     
-                Console.Clear();
-                Console.WriteLine("TicTacToe Game");
-                Console.WriteLine("");
-                                          
-                byte playerNumberTurn = 1;
-                bool isWinner = false;
+                //Create the field
+                Field fieldGame = new Field();
+                string fieldString = SetField(FieldStartingNumber, FieldNumbersInARow);
+                Console.WriteLine(fieldString);
 
-                for (int i = 0; i <= totalInputs-1; i++)
+                //Player turn
+                for (int i = FieldStartingNumber; i <= FieldEndingNumber; i++)
                 {
-                    SetField(field.FieldArray);
-                    switch (playerNumberTurn)
+                    PlayerSwitch(player1, player2, fieldGame, ref fieldString);
+                    if (IsWinner)
                     {
-                        case 1:
-                            bool positionIsValid = false;
-                            do
-                            {
-                                player1.PlayerTurn();
-                                positionIsValid = field.ValidateInput(player1.Selection);
-                            } while (!positionIsValid);
-                            field.ModifyEntry(player1.Selection, player1.Symbol);
-                            isWinner = field.CheckWin(player1.Symbol);
-                            if (isWinner)
-                            {
-                                DisplayWinner(player1.Name, player1.Symbol);
-                                player1.GamesWon++;
-                            }      
-                            playerNumberTurn = 2;
-                            break;
-                        case 2:
-                            positionIsValid = false;
-                            do
-                            {
-                                player2.PlayerTurn();
-                                positionIsValid = field.ValidateInput(player2.Selection);
-                            } while (!positionIsValid);
-                            field.ModifyEntry(player2.Selection, player2.Symbol);
-                            isWinner = field.CheckWin(player2.Symbol);
-                            if (isWinner)
-                            {
-                                DisplayWinner(player2.Name, player2.Symbol);
-                                player2.GamesWon++;
-                            }
-                            playerNumberTurn = 1;
-                            break;
-
-                        default:
-                            break;
+                        DisplayWinner(player1, player2);
+                        break;
                     }
-                    if (isWinner) break;
                 }
-                
-                if (!isWinner)
+
+                if (!IsWinner)
                 {
-                    Console.Clear();
-                    Console.WriteLine("TicTacToe Game"); 
-                    Console.WriteLine("");
-                    Console.WriteLine($"The {gamesPlayed} game is a draw!");
+                    InsertNameHeader();
+                    Console.WriteLine("It was a draw.");
                 }
 
-                Console.WriteLine("");
-                Console.WriteLine($"Number of games played: {gamesPlayed}.");
-                Console.WriteLine($"Player {player1.Name}, won {player1.GamesWon} games.");
-                Console.WriteLine($"Player {player2.Name}, won {player2.GamesWon} games.");
+                GamesPlayed++;
+                AskContinue(player1,player2);
 
-                continuePlaying = ContinuePlaying();            
-                gamesPlayed++;
-
-            } while (continuePlaying);
-
-
+                if (!Continue) break;
+            }
         }
 
-        private static void DisplayWinner(string name, char symbol)
+        private static void AskContinue(Player player1, Player player2)
         {
-            Console.Clear();
-            Console.WriteLine("TicTacToe Game");
-            Console.WriteLine("");
-            Console.WriteLine("-----");
-            Console.WriteLine($" {name}, {symbol} won!");
-            Console.WriteLine("-----");
-            Console.WriteLine("");
+            InsertEmptyRowInConsole();
+            Console.WriteLine($"Total games played: {GamesPlayed}");
+            InsertEmptyRowInConsole();
+            Console.WriteLine($"{player1.Name} won {player1.GamesWon} games.");
+            Console.WriteLine($"{player2.Name} won {player2.GamesWon} games.");
         }
 
-        private static bool ContinuePlaying()
+        private static void DisplayWinner(Player player1, Player player2)
         {
-            
-            bool inputIsValid = true;
-            do
+            InsertNameHeader();
+
+            if (CurrentPlayer == 1) Console.WriteLine($"{player1.Name} won this game!");
+            if (CurrentPlayer == 2) Console.WriteLine($"{player2.Name} won this game!");
+
+            InsertEmptyRowInConsole();
+        }
+
+        private static void PlayerSwitch(Player player1, Player player2, Field field, ref string fieldString)
+        {
+            if (CurrentPlayer == 1)
             {
-                Console.WriteLine("");
-                Console.WriteLine("Play another? (y/n) ");
-                char continuePlayingChar = Console.ReadKey().KeyChar;
-
-                if (continuePlayingChar == 'y' || continuePlayingChar == 'Y') return true;
-                else if (continuePlayingChar == 'n' || continuePlayingChar == 'N') return false;
-                else
-                {
-                    inputIsValid = false;
-                    Console.WriteLine("");
-                    Console.WriteLine("Invalid input! Try again.");
-                }
-            } while (!inputIsValid);
-
-            return false;    
+                PlayerAction(player1, field, ref fieldString);
+                if (StopGame()) return;
+                CurrentPlayer = 2;
+            }
+            if (CurrentPlayer == 2)
+            {
+                PlayerAction(player2, field, ref fieldString);
+                if (StopGame()) return;
+                CurrentPlayer = 1;
+            }
         }
 
-        public static char PlayerTurn (byte playerNumberTurn, char symbol)
+        private static bool StopGame()
         {
-            Console.WriteLine($"Player {playerNumberTurn}");
-            Console.WriteLine(" ");
-            Console.WriteLine($"Choose an empty spot (1-9) for {symbol}: ");
-            char positionString = Console.ReadKey().KeyChar;
-            
-
-            return positionString;
-
+            if (IsWinner) return true;
+            if (CurrentTurnNumber == FieldEndingNumber) return true;
+            return false;
         }
 
+        private static void PlayerAction(Player player, Field field, ref string fieldString)
+        {
+            IsWinner = false;
+            bool isValid = false;
+            int positionColumn = 0;
+            int positionRow = 0;
 
-        public static void SetField(char[,] playField)
+            while (!isValid)
+            {
+                player.PlayerTurn();
+                field.TransformPosition(player.Selection, out positionColumn, out positionRow);
+                isValid = field.ValidateInput(positionColumn, positionRow);
+            }
+            field.ModifyEntry(positionColumn, positionRow, player.Symbol);
+            fieldString = ModifyFieldString(player.Selection, player.Symbol, ref fieldString);
+            CurrentTurnNumber++;
+            InsertNameHeader();
+            Console.WriteLine(fieldString);
+            if (CurrentTurnNumber >= (FieldNumbersInARow * 2) - 1) IsWinner = field.CheckWinner(positionColumn, positionRow, player.Symbol);
+            if (IsWinner) player.GamesWon++;
+        }
+
+        private static string ModifyFieldString(int selection, int symbol, ref string fieldString)
+        {
+            byte digits = (byte)Math.Floor(Math.Log10(selection) + 1);
+            string symbolString = "";
+            string oldValueString;
+            string newValueString;
+            if (symbol == SymbolXcode) symbolString = "X";
+            if (symbol == SymbolOcode) symbolString = "O";
+
+            if (digits == 1)
+            {
+                oldValueString = string.Format("  {0} ", selection.ToString());
+                newValueString = string.Format("  {0} ", symbolString);
+                fieldString = fieldString.Replace(oldValueString, newValueString);
+            }
+                
+            if (digits == 2)
+            {
+                oldValueString = string.Format(" {0} ", selection.ToString());
+                newValueString = string.Format("  {0} ", symbolString);
+                fieldString = fieldString.Replace(oldValueString, newValueString);
+            }
+            if (digits == 3)
+            {
+                oldValueString = string.Format("{0} ", selection.ToString());
+                newValueString = string.Format("  {0} ", symbolString);
+                fieldString = fieldString.Replace(oldValueString, newValueString);
+            }
+            return fieldString;
+            
+        }
+
+        private static void InsertNameHeader()
         {
             Console.Clear();
+            InsertEmptyRowInConsole();
             Console.WriteLine("TicTacToe Game");
+            InsertEmptyRowInConsole();
+        }
+
+        public static void InputNumberRange(string message, int min, int max, out int numberInput)
+        {
+            InsertEmptyRowInConsole();
+            Console.WriteLine(message);
+            while (true)
+            {
+                string? numberInputString = Console.ReadLine();
+                if (int.TryParse(numberInputString, out numberInput))
+                {
+                    if (numberInput >= min && numberInput <= max)
+                    {
+                        return;
+                    }
+                    else Console.WriteLine($"Input out of range. Choose a number between {min} and {max}: ");
+                }
+                else Console.WriteLine($"Invalid input! Enter a number between {min} and {max}: ");
+            }
+
+        }
+
+        public static void InsertEmptyRowInConsole()
+        {
             Console.WriteLine("");
-            Console.WriteLine("     |     |      ");
-            Console.WriteLine("  {0}  |  {1}  |  {2}", playField[0, 0], playField[0, 1], playField[0, 2]);
-            Console.WriteLine("_____|_____|_____");
-            Console.WriteLine("     |     |     ");
-            Console.WriteLine("  {0}  |  {1}  |  {2}", playField[1, 0], playField[1, 1], playField[1, 2]);
-            Console.WriteLine("_____|_____|_____");
-            Console.WriteLine("     |     |     ");
-            Console.WriteLine("  {0}  |  {1}  |  {2}", playField[2, 0], playField[2, 1], playField[2, 2]);
-            Console.WriteLine("     |     |     ");
-            Console.WriteLine("");
-            Console.WriteLine("");
-            Console.WriteLine("");
+        }
+
+        public static string SetField(int min, int fieldSize)
+        {
+            InsertNameHeader();
+            StringBuilder stringDivider = new StringBuilder();
+            int currentPosition = min;
+            byte digits;
+            for (int y = min; y <= fieldSize; y++)
+            {
+                for (int x = min; x < fieldSize; x++)
+                {
+                    stringDivider.Append("     |");
+                }
+                stringDivider.Append("      ");
+                stringDivider.Append("\n");
+                for (int x = min; x < fieldSize; x++)
+                {
+                    digits = (byte)Math.Floor(Math.Log10(currentPosition) + 1);
+                    if (digits == 1) stringDivider.Append($"   {currentPosition} |");
+                    if (digits == 2) stringDivider.Append($"  {currentPosition} |");
+                    if (digits == 3) stringDivider.Append($" {currentPosition} |");
+                    currentPosition++;
+                }
+                digits = (byte)Math.Floor(Math.Log10(currentPosition) + 1);
+                if (digits == 1) stringDivider.Append($"   {currentPosition} ");
+                if (digits == 2) stringDivider.Append($"  {currentPosition} ");
+                if (digits == 3) stringDivider.Append($" {currentPosition} ");
+                currentPosition++;
+                stringDivider.Append("\n");
+                for (int x = min; x < fieldSize; x++)
+                {
+                    stringDivider.Append("_____|");
+                }
+                stringDivider.Append("_____");
+                stringDivider.Append("\n");
+            }
+            stringDivider.Append("      ");
+            stringDivider.Append("\n");
+            stringDivider.Append("\n");
+            stringDivider.Append("\n");
+
+            return stringDivider.ToString();
         }
     }
 }

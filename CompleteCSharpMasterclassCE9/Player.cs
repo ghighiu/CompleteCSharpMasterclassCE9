@@ -4,71 +4,86 @@ using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace CompleteCSharpMasterclassCE9
 {
     internal class Player
     {
-        public char Symbol { get; set; }
+        public int Symbol { get; set; }
         public string Name { get; set; }
         public int GamesWon { get; set; }
+        public int Selection { get; set; }
 
-        public char Selection { get; set; }
+        
 
-        public Player()
+        public Player(int number)
         {
-            Console.Clear();
-            Console.WriteLine("TicTacToe Game");
-            Console.WriteLine("");
-            Console.WriteLine("Enter new players name:");
-            Name = Console.ReadLine();
-            Console.WriteLine("");
-
-            GamesWon = 0;
-        }
-
-        public void ChoseSymbol()
-        {
-            bool validEntry = false;
-            do
+            Program.InsertEmptyRowInConsole();
+            Console.WriteLine($"Player {number}, enter your name:");
+            while (true)
             {
-                Console.WriteLine("");
-                Console.WriteLine($"{Name}, ");
-                Console.WriteLine("Choose your symbol ( X / O ): ");
-                char symbolEntered = Console.ReadKey().KeyChar;
-
-                if (symbolEntered == 'x' || symbolEntered == 'X')
+                string? name = Console.ReadLine();
+                if (!string.IsNullOrEmpty(name))
                 {
-                    Symbol = 'X';
-                    break;
-                }
-                if (symbolEntered == 'o' || symbolEntered == 'O')
-                {
-                    Symbol = 'O';
+                    Name = name;
                     break;
                 }
                 else
                 {
-                    Console.Clear();
-                    Console.WriteLine("TicTacToe Game");
-                    Console.WriteLine("");
-                    Console.WriteLine("--------------------------------");
-                    Console.WriteLine($"{symbolEntered} is an invalid input. Try again. ");
-                    Console.WriteLine("--------------------------------");
-                    Console.WriteLine("");
+                    Program.InsertEmptyRowInConsole();
+                    Console.WriteLine("Invalid input. Try again:");
                 }
-            } while (!validEntry);
+            }
+            Program.InsertEmptyRowInConsole();
+            GamesWon = 0;
+        }
 
+        public void ChooseSymbol()
+        {
+            Program.InsertEmptyRowInConsole();
+            Console.WriteLine($"{Name}, choose your symbol ( X / O ): ");
+            while (true)
+            {        
+                string? symbolEntered = Console.ReadLine();
+                if (!string.IsNullOrEmpty(symbolEntered))
+                {
+                    if (symbolEntered.ToUpper().Equals("X"))
+                    {
+                        Symbol = Program.SymbolXcode;
+                        break;
+                    }
+
+                    if (symbolEntered.ToUpper().Equals("O"))
+                    {
+                        Symbol = Program.SymbolOcode;
+                        break;
+                    }
+                    else
+                    {
+                        Program.InsertEmptyRowInConsole();
+                        Console.WriteLine($"Symbol, {symbolEntered}, is not a invalid input. Try again ( X / O ): ");
+                    }
+                }
+                else
+                {
+                    Program.InsertEmptyRowInConsole();
+                    Console.WriteLine($"Invalid input. Try again ( X / O ): ");
+                }
+            }
         }
 
         public void PlayerTurn()
         {
-            Console.WriteLine(" ");
-            Console.WriteLine($"{Name}, choose an empty spot (1-9) for your {Symbol}:");
-            Selection = Console.ReadKey().KeyChar;
-            //return Selection;
+            Program.InsertEmptyRowInConsole();
+            StringBuilder stringChooseSpot = new StringBuilder();
+            stringChooseSpot.Append($"{Name}, choose an empty spot ({Program.FieldStartingNumber}-{Program.FieldEndingNumber}) for your ");
+            if (Symbol == Program.SymbolXcode) stringChooseSpot.Append("X: ");
+            if (Symbol == Program.SymbolOcode) stringChooseSpot.Append("O: ");
+
+            int selection;
+            Program.InputNumberRange(stringChooseSpot.ToString(), Program.FieldStartingNumber, Program.FieldEndingNumber, out selection);
+            Selection = selection;
         }
-
-
     }
 }
